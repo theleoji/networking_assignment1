@@ -1,4 +1,4 @@
-# http_client.py written by Lukas J. Gladic (ljg766) and Leo Ji ()
+# http_client.py written by Leo Ji (ljd753) and Lukas J. Gladic (ljg766)
 # for EECS 340 Project 1 Winter 2019 with Professor Yan Chen
 
 import sys
@@ -40,7 +40,7 @@ def accessRequest(enteredUrl, counter):
     # If there was one split, save the port that was typed in
     elif(len(hostTemp) == 2):
         host = (hostTemp[0], hostTemp[1])
-    # If there were multipe splits, there is something wrong woth the URL
+    # If there were multipe splits, there is something wrong with the URL
     else:
         print("Entered URL and ports are nonsensical")
         sys.exit(102)
@@ -67,82 +67,85 @@ def accessRequest(enteredUrl, counter):
     # Handles Host: header
     httpMsg += "Host: "
     httpMsg += host[0]
-    # If the port isn't thedeafult Port 80, specify the port in the message
+    # If the port isn't the default Port 80, specify the port in the message
     if(host[1] != 80):
         httpMsg += ":"
         httpMsg += host[1]
+    # End the message appropiately
     httpMsg += "\r\n\r\n"
 
+    # Creating the socket object using the Python Socket library
     socketObj = socket.create_connection(host)
 
+    # Sending the message using the socket we created
     socketObj.sendall(httpMsg)
 
+    # Intializing the variable to hold the return message
     msgReturn = ""
 
-    # msgReturn = socketObj.recv(1024)
-    # find Content-Length
-    # clLocation = msgReturn.find("Content-Length:")
-    # if (clLocation == -1):
-    #     sys.exit(-2)
-
-    # manages responses > 1024 bytes
-    # borrowed from https://docs.python.org/2/library/socket.html
+    # Manages responses > 1024 bytes
+    # Borrowed from https://docs.python.org/2/library/socket.html
     while True:
         data = socketObj.recv(1024)
         if not data: break
         msgReturn += data
+	# At this point, we have the full HTTP response
 
-    # at this point, we have the full HTTP response
-
-    # looking at HTTP response code
+    # Splitting the return message up into lines
     firstLine = msgReturn.splitlines()[0]
+    # Intializing the newURL varaible
     newUrl = ""
-    # print(int(firstLine[9:12]))
 
+    # The response code is in the same place for every message, so we grab the numerical code
+    # We cast it to an int so we can compare it to other numbers
     responseCode = int(firstLine[9:12])
 
-    # print(type(responseCode))
-
+    # Checking if the code is either a temporary or permanent redirect
     if (responseCode == 301 or responseCode == 302):
-        # print(firstLine)
+    	# Check each line in the response for a location line
         for line in msgReturn.splitlines():
+            # Store the location of the location text
             loc = line.find("Location: ")
+            # If 'Location: ' was in the given line, the response will not be -1
             if (loc != -1):
-                # print(loc)
+                # Update newURL with the new URL and break out of the loop
                 newUrl = line[10:]
                 break
-    # elif firstLine.find("302 Moved Temporarily"):
-    #     for line in msgReturn.splitlines():
-    #         loc = line.find("Location: ")
-    #         if (loc != -1):
-    #             newUrl = line[10:]
-    #             break
 
+    # If the response code is a 400 code, exit the program with that as the exit code
     if (responseCode >= 400 and responseCode < 500):
-        # print(responseCode)
         exitCode = responseCode
 
+    # Check if the content type line says text/html
     contentType = msgReturn.find("Content-Type: text/html")
+    # If the type is not text/html exit with an error code
     if(contentType == -1):
         print("Returned type is not text/html")
         sys.exit(101)
 
+    # Close the connection
     socketObj.close()
 
-    # print(newUrl)
+    # If there is a new URL, print a message
+    # Attempt to access the new URL and increase the redirect counter by 1
     if(newUrl):
         print("Redirected to: " + newUrl)
         (msgReturn, exitCode) = accessRequest(newUrl, counter + 1)
 
+    # We return the message recieved and exit code
     return (msgReturn, exitCode)
 
+# Actually run the main function using the entered URL and a counter of 0
 (msgReturn, exitCode) = accessRequest(enteredUrl , 0)
 
-# from https://stackoverflow.com/questions/4020539/process-escape-sequences-in-a-string-in-python
+# Returning the string in a tuple changes some stuff, so we have to decode it,
+# and then we print the message to screen.
+# Taken from https://stackoverflow.com/questions/4020539/process-escape-sequences-in-a-string-in-python
 print(str(msgReturn).decode('string_escape'))
 
+# If the exit code was covered by any of our checks, exit using that code
 if (int(exitCode) > 0):
-    # print(exitCode)
     sys.exit(exitCode)
 
+# If we get here it means we eventually got a 200 OK and we exit with code 0
 sys.exit(0)
