@@ -4,25 +4,45 @@ from urlparse import urlparse
 
 # Checking if the input is of the right form.
 if len(sys.argv) != 2:
-    exit(-1)
+    sys.exit(-1)
 
 #Storing the inputed URL.
 enteredUrl = sys.argv[1]
 
+if(enteredUrl[0:7] != 'http://'):
+    print("Does not start with HTTP://")
+    sys.exit(500)
+
 #Printing the URL to screen for the user to see.
-print(enteredUrl)
+# print(enteredUrl)
 
+def accessRequest(enteredUrl):
 #Parsing through the URL input using the URLparse library.
-o = urlparse(enteredUrl)
+    o = urlparse(enteredUrl)
+    httpMsg = "GET "
 
-host = ("eecs.northwestern.edu", 80)
+    if(o.scheme == 'https'):
+        print ("Attempted to HTTPS")
+        sys.exit(403)
 
-socketObj = socket.create_connection(host)
+    host = (o.netloc, 80)
 
-socketObj.sendall("GET / HTTP/1.0\r\n\r\n")
+    if (o.path==""):
+        httpMsg += "/"
+    else:
+        httpMsg += o.path
 
-msgReturn = socketObj.recv(1024)
+    httpMsg += " HTTP/1.0"
+    httpMsg += "\r\n\r\n"
 
-socketObj.close()
+    socketObj = socket.create_connection(host)
+
+    socketObj.sendall(httpMsg)
+
+    msgReturn = socketObj.recv(1024)
+
+    socketObj.close()
+
+
 
 print(msgReturn)
