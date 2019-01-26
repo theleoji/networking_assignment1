@@ -39,10 +39,47 @@ def accessRequest(enteredUrl):
 
     socketObj.sendall(httpMsg)
 
-    msgReturn = socketObj.recv(1024)
+    msgReturn = ""
+
+    # msgReturn = socketObj.recv(1024)
+    # find Content-Length
+    # clLocation = msgReturn.find("Content-Length:")
+    # if (clLocation == -1):
+    #     sys.exit(-2)
+
+    # manages responses > 1024 bytes
+    # borrowed from https://docs.python.org/2/library/socket.html
+    while True:
+        data = socketObj.recv(1024)
+        if not data: break
+        msgReturn += data
+
+    # at this point, we have the full HTTP response
+
+    # looking at HTTP response code
+    firstLine = msgReturn.splitlines()[0]
+    newUrl = ""
+    # print(firstLine)
+    if firstLine.find("301 Moved Permanently"):
+        # print(firstLine)
+        for line in msgReturn.splitlines():
+            loc = line.find("Location: ")
+            if (loc != -1):
+                print(loc)
+                newUrl = line[10:]
+                break
+
+    elif firstLine.find("302 Moved Temporarily"):
+        for line in msgReturn.splitlines():
+            loc = line.find("Location: ")
+            if (loc != -1):
+                newUrl = line[10:]
+                break
 
     socketObj.close()
 
+    print(newUrl)
 
+    return msgReturn
 
-print(msgReturn)
+print(accessRequest(enteredUrl))
