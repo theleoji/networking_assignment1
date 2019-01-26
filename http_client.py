@@ -29,7 +29,6 @@ def accessRequest(enteredUrl, counter):
     exitCode = 0
     o = urlparse(enteredUrl)
 
-
     hostTemp = o.netloc.split(":")
     if(len(hostTemp) == 1):
         host = (hostTemp[0], 80)
@@ -46,7 +45,6 @@ def accessRequest(enteredUrl, counter):
         sys.exit(403)
 
     # host = (o.netloc, port)
-    print(host)
 
     if (o.path==""):
         httpMsg += "/"
