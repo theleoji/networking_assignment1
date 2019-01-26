@@ -1,61 +1,73 @@
+# http_client.py written by Lukas J. Gladic (ljg766) and Leo Ji ()
+# for EECS 340 Project 1 Winter 2019 with Professor Yan Chen
+
 import sys
 import socket
 from urlparse import urlparse
 
 
-
-# Checking if the input is of the right form.
+# Checking if the input is of the right form
 if len(sys.argv) != 2:
     sys.exit(-1)
 
 #Storing the inputed URL.
 enteredUrl = sys.argv[1]
 
+# Making sure that the first 7 characters of the URL are "http://"
 if(enteredUrl[0:7] != 'http://'):
     print("Does not start with HTTP://")
     sys.exit(500)
 
-#Printing the URL to screen for the user to see.
-# print(enteredUrl)
-
+# Main function, does most of the assignment  
+# enteredURL is the URL that was entered by the user
+# counter keeps track of how many redirects we have gone through
 def accessRequest(enteredUrl, counter):
 
-    # dies on 10
+    # Checks number of redirects, and returns if it is 10 or more
     if (counter > 9):
-        print("10 redirects, exiting")
+        print("Reached 10 redirects, exiting")
         return ("", 10)
 
-#Parsing through the URL input using the URLparse library.
+	# Parsing through the URL input using the URLparse library.
     exitCode = 0
     o = urlparse(enteredUrl)
 
+    # Checks if there is a colon in the parsed URL, and splits the string at the colon
     hostTemp = o.netloc.split(":")
+    # If there was no split, use default port 80
     if(len(hostTemp) == 1):
         host = (hostTemp[0], 80)
+    # If there was one split, save the port that was typed in
     elif(len(hostTemp) == 2):
         host = (hostTemp[0], hostTemp[1])
+    # If there were multipe splits, there is something wrong woth the URL
     else:
         print("Entered URL and ports are nonsensical")
         sys.exit(102)
 
+    # Building the GET message
     httpMsg = "GET "
 
+    # Checking if the URL is of the secure variety, and exiting if so
     if(o.scheme == 'https'):
         print ("Attempted to HTTPS")
         sys.exit(403)
 
-    # host = (o.netloc, port)
-
+    # If a path was not specified, just add a '/' to the message
     if (o.path==""):
         httpMsg += "/"
+    # If there was a path, add that to the message instead
     else:
         httpMsg += o.path
 
+    # Finishing the first line of the GET message
     httpMsg += " HTTP/1.0"
     httpMsg += "\r\n"
-    # handles Host: header
+
+    # Handles Host: header
     httpMsg += "Host: "
     httpMsg += host[0]
+    # If the port isn't thedeafult Port 80, specify the port in the message
     if(host[1] != 80):
         httpMsg += ":"
         httpMsg += host[1]
