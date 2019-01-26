@@ -29,13 +29,24 @@ def accessRequest(enteredUrl, counter):
     exitCode = 0
     o = urlparse(enteredUrl)
 
+
+    hostTemp = o.netloc.split(":")
+    if(len(hostTemp) == 1):
+        host = (hostTemp[0], 80)
+    elif(len(hostTemp) == 2):
+        host = (hostTemp[0], hostTemp[1])
+    else:
+        print("Entered URL and ports are nonsensical")
+        sys.exit(102)
+
     httpMsg = "GET "
 
     if(o.scheme == 'https'):
         print ("Attempted to HTTPS")
         sys.exit(403)
 
-    host = (o.netloc, port)
+    # host = (o.netloc, port)
+    print(host)
 
     if (o.path==""):
         httpMsg += "/"
