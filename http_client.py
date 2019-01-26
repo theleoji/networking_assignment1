@@ -65,7 +65,7 @@ def accessRequest(enteredUrl):
         for line in msgReturn.splitlines():
             loc = line.find("Location: ")
             if (loc != -1):
-                print(loc)
+                # print(loc)
                 newUrl = line[10:]
                 break
 
@@ -78,7 +78,9 @@ def accessRequest(enteredUrl):
 
     socketObj.close()
 
-    print(newUrl)
+    # print(newUrl)
+    if(newUrl):
+        msgReturn = accessRequest(newUrl)
 
     return msgReturn
 
