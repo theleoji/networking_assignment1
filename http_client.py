@@ -53,6 +53,12 @@ def accessRequest(enteredUrl, counter):
 
     httpMsg += " HTTP/1.0"
     httpMsg += "\r\n\r\n"
+    # handles Host: header
+    httpMsg += "Host: "
+    httpMsg += host[0]
+    if(host[1] != 80):
+        httpMsg += ":"
+        httpMsg += host[1]
 
     socketObj = socket.create_connection(host)
 
