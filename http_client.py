@@ -1,4 +1,5 @@
 import sys
+import socket
 
-for eachArg in sys.argv:
-        print(eachArg)
+if len(sys.argv) != 2:
+    exit(-1)
