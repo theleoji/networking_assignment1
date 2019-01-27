@@ -2,4 +2,4 @@
 # for EECS 340 Winter 2019 with Professor Yan Chen
 
 
-print("fuck"0)
+print("fuck")
