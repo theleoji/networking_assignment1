@@ -9,22 +9,24 @@ if len(sys.argv) != 2:
     sys.exit(-1)
 
 #Storing the inputed URL.
-HOST = socket.gethostbyname(socket.gethostname())
-portRequested = sys.argv[1]
+HOST = '127.0.0.1'
+portRequested = int(sys.argv[1])
 
 # basic server adapted from https://realpython.com/python-sockets/#echo-server
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 s.bind((HOST, portRequested))
-s.listen()
+s.listen(5)
 
 conn, addr = s.accept()
 
-with conn:
-    print('Connected by ', addr)
-    while True:
-        data = conn.recv(1024)
-        if not data:
-            break
-        conn.sendall(data)
+print('Connected by ', addr)
+while True:
+    data = conn.recv(1024)
+    if not data:
+        break
+    conn.sendall(data)
+
+conn.close()
+s.close()
