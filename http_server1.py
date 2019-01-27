@@ -9,6 +9,7 @@ if len(sys.argv) != 2:
     sys.exit(-1)
 
 #Storing the inputed URL.
+HOST = socket.gethostbyname(socket.gethostname())
 portRequested = sys.argv[1]
 
 # basic server adapted from https://realpython.com/python-sockets/#echo-server
