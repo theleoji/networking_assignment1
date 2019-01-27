@@ -18,7 +18,7 @@ if(enteredUrl[0:7] != 'http://'):
     print("Does not start with HTTP://")
     sys.exit(500)
 
-# Main function, does most of the assignment  
+# Main function, does most of the assignment
 # enteredURL is the URL that was entered by the user
 # counter keeps track of how many redirects we have gone through
 def accessRequest(enteredUrl, counter):
