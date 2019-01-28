@@ -65,62 +65,63 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, portRequested))
 s.listen(5)
 
-conn, addr = s.accept()
+while True:
+    conn, addr = s.accept()
 
-# Print the address that we connected to
-print('Connected by ', addr)
+    # Print the address that we connected to
+    print('Connected by ', addr)
 
-#Starting the data list
-data = ""
+    #Starting the data list
+    data = ""
 
-# Trying to be able to recieve a request longer than 1024, but having issues
-# while True:
-#     newdata = conn.recv(1024)
-#     print(newdata)
-#     if not newdata: break
-#     data += newdata
+    # Trying to be able to recieve a request longer than 1024, but having issues
+    # while True:
+    #     newdata = conn.recv(1024)
+    #     print(newdata)
+    #     if not newdata: break
+    #     data += newdata
 
-# Receieve the data from the request
-data = conn.recv(1024)
+    # Receieve the data from the request
+    data = conn.recv(1024)
 
-# Get the file content and proper response code based on the request string
-fileContent, responseCode = httpRead(data)
+    # Get the file content and proper response code based on the request string
+    fileContent, responseCode = httpRead(data)
 
-# Start building the response message
-responseAll = "HTTP/1.0 "
+    # Start building the response message
+    responseAll = "HTTP/1.0 "
 
-# If the code was 403, update the file content and server response
-if(responseCode == 403):
-    responseAll += "403 Forbidden"
-    fileContent = "<h1>403 Forbidden</h1>"
-# If the code was 404, update the strings appropiately
-elif(responseCode == 404):
-    responseAll += "404 Not Found"
-    fileContent = "<h1>404 Not Found</h1>"
-# Otherwise the request must have been fine and we update the server message accordingly
-else:
-    responseAll += "200 OK"
+    # If the code was 403, update the file content and server response
+    if(responseCode == 403):
+        responseAll += "403 Forbidden"
+        fileContent = "<h1>403 Forbidden</h1>"
+    # If the code was 404, update the strings appropiately
+    elif(responseCode == 404):
+        responseAll += "404 Not Found"
+        fileContent = "<h1>404 Not Found</h1>"
+    # Otherwise the request must have been fine and we update the server message accordingly
+    else:
+        responseAll += "200 OK"
 
-# Constructing the rest of the server response message
-responseAll += "\r\n"
-responseAll += "Content-Type: text/html"
-responseAll += "\r\n"
-responseAll += "Content-Length: "
-# Using the method we found to get the correct byte length of html we are sending
-responseAll += str(utf8len(fileContent))
-responseAll += "\r\n"
+    # Constructing the rest of the server response message
+    responseAll += "\r\n"
+    responseAll += "Content-Type: text/html"
+    responseAll += "\r\n"
+    responseAll += "Content-Length: "
+    # Using the method we found to get the correct byte length of html we are sending
+    responseAll += str(utf8len(fileContent))
+    responseAll += "\r\n"
 
-responseAll += "\r\n"
-# Appending the actual payload onto the response message
-responseAll += fileContent
-# At this point we have the full response constructed
+    responseAll += "\r\n"
+    # Appending the actual payload onto the response message
+    responseAll += fileContent
+    # At this point we have the full response constructed
 
-# Printing response on server side for debugging
-print(responseAll)
+    # Printing response on server side for debugging
+    print(responseAll)
 
-# Sending the response
-conn.sendall(responseAll)
+    # Sending the response
+    conn.sendall(responseAll)
 
-# Closing the connection and then the socket
-conn.close()
+    # Closing the connection and then the socket
+    conn.close()
 s.close()
