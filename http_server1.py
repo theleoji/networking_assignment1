@@ -79,49 +79,48 @@ while True:
     # Receieve the data from the request
     data = conn.recv(1024)
 
-    if (data and data.strip):
-        break
-        
-    # Get the file content and proper response code based on the request string
-    fileContent, responseCode = httpRead(data)
+    if (data and data.strip()):
 
-    # Start building the response message
-    responseAll = "HTTP/1.0 "
+        # Get the file content and proper response code based on the request string
+        fileContent, responseCode = httpRead(data)
 
-    # If the code was 403, update the file content and server response
-    if(responseCode == 403):
-        responseAll += "403 Forbidden"
-        fileContent = "<h1>403 Forbidden</h1>"
-    # If the code was 404, update the strings appropiately
-    elif(responseCode == 404):
-        responseAll += "404 Not Found"
-        fileContent = "<h1>404 Not Found</h1>"
-    # Otherwise the request must have been fine and we update the server message accordingly
-    else:
-        responseAll += "200 OK"
+        # Start building the response message
+        responseAll = "HTTP/1.0 "
 
-    # Constructing the rest of the server response message
-    responseAll += "\r\n"
-    responseAll += "Content-Type: text/html"
-    responseAll += "\r\n"
-    responseAll += "Content-Length: "
-    # Using the method we found to get the correct byte length of html we are sending
-    responseAll += str(utf8len(fileContent))
-    responseAll += "\r\n"
+        # If the code was 403, update the file content and server response
+        if(responseCode == 403):
+            responseAll += "403 Forbidden"
+            fileContent = "<h1>403 Forbidden</h1>"
+        # If the code was 404, update the strings appropiately
+        elif(responseCode == 404):
+            responseAll += "404 Not Found"
+            fileContent = "<h1>404 Not Found</h1>"
+        # Otherwise the request must have been fine and we update the server message accordingly
+        else:
+            responseAll += "200 OK"
 
-    responseAll += "\r\n"
-    # Appending the actual payload onto the response message
-    responseAll += fileContent
-    # ------ At this point we have the full response constructed -------
+        # Constructing the rest of the server response message
+        responseAll += "\r\n"
+        responseAll += "Content-Type: text/html"
+        responseAll += "\r\n"
+        responseAll += "Content-Length: "
+        # Using the method we found to get the correct byte length of html we are sending
+        responseAll += str(utf8len(fileContent))
+        responseAll += "\r\n"
 
-    # Printing response on server side for debugging
-    print(responseAll)
+        responseAll += "\r\n"
+        # Appending the actual payload onto the response message
+        responseAll += fileContent
+        # ------ At this point we have the full response constructed -------
 
-    # Sending the response
-    conn.sendall(responseAll)
+        # Printing response on server side for debugging
+        print(responseAll)
 
-    # Closing the connection
-    conn.close()
+        # Sending the response
+        conn.sendall(responseAll)
+
+        # Closing the connection
+        conn.close()
 
 # Closing the server, even though we really can't ever get here, unless something above fails
 s.close()
