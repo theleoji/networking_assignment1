@@ -124,4 +124,5 @@ while True:
 
     # Closing the connection and then the socket
     conn.close()
+
 s.close()
