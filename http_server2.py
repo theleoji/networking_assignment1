@@ -4,7 +4,11 @@
 import sys
 import socket
 import os
+import select
+import Queue
+import errno
 
+# https://pymotw.com/2/select/
 
 # Returns the size of a string in bytes
 # Borrowed from: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
@@ -50,40 +54,7 @@ def fileSearch(filename):
     # If we get here, the file was not in the directory so we return an empty string and 404 code
     return ("", 404)
 
-# Checking if the input is of the right form
-if len(sys.argv) != 2:
-    sys.exit(-1)
-
-# Not specifying a host lets us listen on all available IPs
-HOST = ""
-# Storing the requested port
-portRequested = int(sys.argv[1])
-
-# Basic server adapted from https://realpython.com/python-sockets/#echo-server
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-s.bind((HOST, portRequested))
-s.listen(5)
-
-while True:
-    conn, addr = s.accept()
-
-    # Print the address that we connected to
-    print('Connected by ', addr)
-
-    #Starting the data list
-    data = ""
-
-    # Trying to be able to recieve a request longer than 1024, but having issues
-    # while True:
-    #     newdata = conn.recv(1024)
-    #     print(newdata)
-    #     if not newdata: break
-    #     data += newdata
-
-    # Receieve the data from the request
-    data = conn.recv(1024)
-
+def constructResponse(data):
     # Get the file content and proper response code based on the request string
     fileContent, responseCode = httpRead(data)
 
@@ -117,12 +88,86 @@ while True:
     # At this point we have the full response constructed
 
     # Printing response on server side for debugging
-    print(responseAll)
+    # print(responseAll)
 
-    # Sending the response
-    conn.sendall(responseAll)
+    return responseAll
 
-    # Closing the connection and then the socket
-    conn.close()
+# Checking if the input is of the right form
+if len(sys.argv) != 2:
+    sys.exit(-1)
+
+# Not specifying a host lets us listen on all available IPs
+HOST = ""
+# Storing the requested port
+portRequested = int(sys.argv[1])
+
+# Basic server adapted from https://realpython.com/python-sockets/#echo-server
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+s.bind((HOST, portRequested))
+s.setblocking(False)
+s.listen(5)
+
+inbounds = [s]
+outbounds= [ ]
+
+message_queues = {}
+
+while True:
+    while inbounds:
+        readable, writable, exceptional = select.select(inbounds, outbounds, inbounds)
+
+        for socket in readable:
+            if socket is s:
+                conn, addr = s.accept()
+                print('Connected by ', addr)
+                conn.setblocking(False)
+                inbounds.append(conn)
+
+                message_queues[conn] = Queue.Queue()
+
+            else:
+                data = socket.recv(1024)
+                if data:
+                    response = constructResponse(data)
+                    message_queues[socket].put(response)
+                    if socket not in outbounds:
+                        outbounds.append(socket)
+                    else:
+                        print("closing socket", addr)
+                        if socket in outbounds:
+                            outbounds.remove(socket)
+                        inbounds.remove(socket)
+                        socket.close()
+                        del message_queues[socket]
+
+        for socket in writable:
+            try:
+                next_msg = message_queues[socket].get_nowait()
+                print next_msg
+            except Queue.Empty:
+                # no messages need to be sent down this socket
+                outbounds.remove(socket)
+            else:
+                totalSent = 0
+                while totalSent < len(next_msg):
+                    # https://stackoverflow.com/questions/38419606/socket-error-errno-11-resource-temporarily-unavailable-appears-randomly
+                    try:
+                        this_sent = socket.send(next_msg[totalSent:])
+                    except IOError as e:
+                        if e.errno == errno.EWOULDBLOCK:
+                            pass
+
+                    if(this_sent == 0):
+                        print("something went wrong with the socket")
+                    totalSent = totalSent + this_sent
+
+        for socket in exceptional:
+            outbounds.remove(socket)
+            if(socket in outbounds):
+                outbounds.remove(socket)
+
+            socket.close()
+            del message_queues[socket]
 
 s.close()
