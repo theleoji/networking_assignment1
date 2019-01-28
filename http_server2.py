@@ -1,4 +1,4 @@
-# http_server1.py written by Leo Ji (ljd753) and Lukas J. Gladic (ljg766)
+# http_server2.py written by Leo Ji (ljd753) and Lukas J. Gladic (ljg766)
 # for EECS 340 Project 1 Winter 2019 with Professor Yan Chen
 
 import sys
@@ -8,7 +8,6 @@ import select
 import Queue
 import errno
 
-# https://pymotw.com/2/select/
 
 # Returns the size of a string in bytes
 # Borrowed from: https://stackoverflow.com/questions/30686701/python-get-size-of-string-in-bytes
@@ -54,6 +53,7 @@ def fileSearch(filename):
     # If we get here, the file was not in the directory so we return an empty string and 404 code
     return ("", 404)
 
+# Our response message from http_server1.py made into a function
 def constructResponse(data):
     # Get the file content and proper response code based on the request string
     fileContent, responseCode = httpRead(data)
@@ -85,11 +85,9 @@ def constructResponse(data):
     responseAll += "\r\n"
     # Appending the actual payload onto the response message
     responseAll += fileContent
-    # At this point we have the full response constructed
+    # ------ At this point we have the full response constructed ------
 
-    # Printing response on server side for debugging
-    # print(responseAll)
-
+    # Return the response we created
     return responseAll
 
 # Checking if the input is of the right form
@@ -102,72 +100,122 @@ HOST = ""
 portRequested = int(sys.argv[1])
 
 # Basic server adapted from https://realpython.com/python-sockets/#echo-server
+# Multiconnection server insight and framework adapted from: https://pymotw.com/2/select/
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Almost the same as the previous server, we just set blocking to false to allow multiple connections
 s.bind((HOST, portRequested))
 s.setblocking(False)
 s.listen(5)
 
+# Starting our inbounds and outbounds lists
 inbounds = [s]
 outbounds= [ ]
 
+# Starting our message queue
 message_queues = {}
 
+# Keep the server running until we kill the process
 while True:
+    # Run this while our inbound list exists
     while inbounds:
+        # Storing our inbounds and outbounds after they go through the selector
         readable, writable, exceptional = select.select(inbounds, outbounds, inbounds)
 
+        # For each socket that we are reading from
         for socket in readable:
+            # Check if the connection is attempting to connect on the main socket
             if socket is s:
+                # Accept the connection and store the sender information
                 conn, addr = s.accept()
+                # Print our connection message
                 print('Connected by ', addr)
+                # Make sure the connection is not blocking so we can still accept other connections
                 conn.setblocking(False)
+                # Add this connetion to the inbounds list
                 inbounds.append(conn)
 
+                # Creating a new queue with the message
                 message_queues[conn] = Queue.Queue()
 
+            # If the socket is not the main socket, we can do stuff with it
             else:
+                # Storing the recieved request
                 data = socket.recv(1024)
+                # Check if we actually receive something
                 if data:
+                    # Construct the appropiate response using our functions defined above
                     response = constructResponse(data)
+                    # Add our response to the message queues for that socket
                     message_queues[socket].put(response)
+                    # Check if our socket is on the outbounds lists
                     if socket not in outbounds:
+                        # If it is not, add it to the list
                         outbounds.append(socket)
                     else:
+                        # If it is in outbounds, print a closing message
                         print("closing socket", addr)
                         if socket in outbounds:
+                            # If it is still in outbounds, we remove the socket from the list
                             outbounds.remove(socket)
+                        # Remove the socket from the inbounds list
                         inbounds.remove(socket)
+                        # Close the socket
                         socket.close()
+                        # Remove the message from the message queue list
                         del message_queues[socket]
 
+        # For each socket that we can send stuff through
         for socket in writable:
+            # Try to get a message from the message queue for this socket
             try:
+                # Store the message
                 next_msg = message_queues[socket].get_nowait()
-                print next_msg
+            # If we get an empty queue exception, handle it
             except Queue.Empty:
-                # no messages need to be sent down this socket
+                # no messages need to be sent down this socket, so we remove it
                 outbounds.remove(socket)
+            # If there is no exception, keep going
             else:
+                # We were having issues where the whole message payload was not being sent so we found a solution where we
+                # track how much we have sent serverside and keep sending until we reach the expected message length
+                # Adapted from: https://docs.python.org/2/howto/sockets.html?fbclid=IwAR2hl179EyV3Rp6lT2kH1mi5_IVKjvAhY-O_aOnZJ4cNo_ShFGLPt3jWZMY#socket-howto
+
+                # Initialize the length variable
                 totalSent = 0
+                # While the total amount sent is less than the whole mmessage, keep doing
                 while totalSent < len(next_msg):
-                    # https://stackoverflow.com/questions/38419606/socket-error-errno-11-resource-temporarily-unavailable-appears-randomly
+                    # Another issue came up for where we got blocking errors because the server kept checking for another response before
+                    # there was one, so we just made sure that exception was passed
+                    # Borrowed from: https://stackoverflow.com/questions/38419606/socket-error-errno-11-resource-temporarily-unavailable-appears-randomly
+                    
+                    # Try sending the response message
                     try:
+                        # Store what we just sent
                         this_sent = socket.send(next_msg[totalSent:])
+                    # If we get the block exception we kept encountering, just ignore it and let it pass
                     except IOError as e:
                         if e.errno == errno.EWOULDBLOCK:
                             pass
 
+                    # If for some reason nothing is sent through the socket, something broke that we have no control over
                     if(this_sent == 0):
                         print("something went wrong with the socket")
+                    # Update the total amount of information that we have sent
                     totalSent = totalSent + this_sent
 
+        # For each socket that gave us an exception
         for socket in exceptional:
+            # Remove it from the inbounds list
             outbounds.remove(socket)
+            # If it made it to the outbounds list, remove it from there too
             if(socket in outbounds):
                 outbounds.remove(socket)
 
+            # Close the socket of the connection withan exception
             socket.close()
+            # Delete the messages from it from our message queue
             del message_queues[socket]
 
+# If we somehow break out of the loop that is the whole server, close the main socket
 s.close()
