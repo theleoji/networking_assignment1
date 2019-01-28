@@ -65,21 +65,16 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, portRequested))
 s.listen(5)
 
+# Loop the server stuff so it can keep accepting new connections after in completes the current one
 while True:
+	# Store the connection and address of the sender
     conn, addr = s.accept()
 
     # Print the address that we connected to
     print('Connected by ', addr)
 
-    #Starting the data list
+    # Starting the data list
     data = ""
-
-    # Trying to be able to recieve a request longer than 1024, but having issues
-    # while True:
-    #     newdata = conn.recv(1024)
-    #     print(newdata)
-    #     if not newdata: break
-    #     data += newdata
 
     # Receieve the data from the request
     data = conn.recv(1024)
@@ -114,7 +109,7 @@ while True:
     responseAll += "\r\n"
     # Appending the actual payload onto the response message
     responseAll += fileContent
-    # At this point we have the full response constructed
+    # ------ At this point we have the full response constructed -------
 
     # Printing response on server side for debugging
     print(responseAll)
@@ -122,7 +117,8 @@ while True:
     # Sending the response
     conn.sendall(responseAll)
 
-    # Closing the connection and then the socket
+    # Closing the connection
     conn.close()
 
+# Closing the server, even though we really can't ever get here, unless something above fails
 s.close()
