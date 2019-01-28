@@ -10,7 +10,7 @@ def utf8len(s):
     return len(s.encode('utf-8'))
 
 def httpRead(requestMsg):
-    print(requestMsg)
+    # print(requestMsg)
     httpParts = requestMsg.split()
 
     if (httpParts[0] != "GET"):
@@ -22,13 +22,13 @@ def httpRead(requestMsg):
     return fileSearch(filename)
 
 def fileSearch(filename):
-
     # https://stackoverflow.com/questions/11968976/list-files-only-in-the-current-directory
     files = [f for f in os.listdir('.') if os.path.isfile(f)]
     for f in files:
         if (f == filename):
             if (f[-5:]==".html" or f[-4]==".htm"):
-                fileContent = open(f, "r")
+                fileObj = open(f, "r")
+                fileContent = fileObj.read()
                 return (fileContent, 200)
             else:
                 return ("", 403)
@@ -55,17 +55,18 @@ print('Connected by ', addr)
 
 data = ""
 
-while True:
-    data += conn.recv(1024)
-    print(data)
-    if not data:
-        break
+# while True:
+#     newdata = conn.recv(1024)
+#     print(newdata)
+#     if not newdata: break
+#     data += newdata
+data = conn.recv(1024)
 
-print(data)
 
+# print(data)
 fileContent, responseCode = httpRead(data)
 
-responseAll == "HTTP/1.0 "
+responseAll = "HTTP/1.0 "
 
 if(responseCode == 403):
     responseAll += "403 Forbidden"
@@ -80,14 +81,16 @@ responseAll += "\r\n"
 responseAll += "Content-Type: text/html"
 responseAll += "\r\n"
 responseAll += "Content-Length: "
-responseAll += utf8len(fileContent)
+responseAll += str(utf8len(fileContent))
 responseAll += "\r\n"
 
 responseAll += "\r\n"
 responseAll += fileContent
 # full response constructed
 
-conn.sendall(fileContent)
+print(responseAll)
+
+conn.sendall(responseAll)
 
 conn.close()
 s.close()
