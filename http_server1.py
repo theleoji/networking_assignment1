@@ -79,6 +79,9 @@ while True:
     # Receieve the data from the request
     data = conn.recv(1024)
 
+    if (data and data.strip):
+        break
+        
     # Get the file content and proper response code based on the request string
     fileContent, responseCode = httpRead(data)
 

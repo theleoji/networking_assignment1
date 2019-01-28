@@ -143,7 +143,7 @@ while True:
                 # Storing the recieved request
                 data = socket.recv(1024)
                 # Check if we actually receive something
-                if data:
+                if data and data.strip():
                     # Construct the appropiate response using our functions defined above
                     response = constructResponse(data)
                     # Add our response to the message queues for that socket
@@ -184,11 +184,11 @@ while True:
                 # Initialize the length variable
                 totalSent = 0
                 # While the total amount sent is less than the whole mmessage, keep doing
-                while totalSent < len(next_msg):
+                while totalSent < utf8len(next_msg):
                     # Another issue came up for where we got blocking errors because the server kept checking for another response before
                     # there was one, so we just made sure that exception was passed
                     # Borrowed from: https://stackoverflow.com/questions/38419606/socket-error-errno-11-resource-temporarily-unavailable-appears-randomly
-                    
+
                     # Try sending the response message
                     try:
                         # Store what we just sent
